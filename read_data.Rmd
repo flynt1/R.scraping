@@ -45,8 +45,8 @@ d[d$Unit==some,] %>%
   Plot(ReportDt,Power, by1= Unit, color= "red", data=. , n_row=4)
 ```
 ```{r}
-read_lines("http://lib.stat.cmu.edu/datasets/cloud", skip = 14) %>% 
-  read_table()
+ll= read_lines("http://lib.stat.cmu.edu/datasets/cloud", skip = 14) %>% read_table()
+ll
 ```
 
 
@@ -72,6 +72,10 @@ data %>%
   geom_boxplot(aes(fill=seeded))
 ```
 
+```{r}
+ll[grep("winter",ll$SEASON, ignore.case = T),]
+ll[str_detect(ll$SEASON,"WINTER"),]
+```
 
 
 
