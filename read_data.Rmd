@@ -1,0 +1,114 @@
+```{r}
+library(tidyverse)
+library(httr)
+library(lubridate)
+library(lessR)
+```
+
+
+```{r}
+read_csv("./datasets/weather.csv",
+         #skip = 1,
+         #col_names=c("l_no","l_name","date","temp","humidi"),
+         locale = locale("ko", encoding="euc-kr"))
+```
+
+```{r}
+url="https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
+df= read_csv(url, col_names = c("s.len","s.wid","p.len","p.wid","species"))
+df
+```
+```{r}
+Plot(p.len, p.wid, by= species, data=df)
+```
+```{r}
+download.file(url, destfile = "./datasets/iris.csv")
+```
+```{r}
+get= GET("https://www.nrc.gov/reading-rm/doc-collections/event-status/reactor-status/powerreactorstatusforlast365days.txt")
+```
+
+```{r}
+get
+d=content(get, as="text") %>% 
+  read_delim(delim = "|") %>% 
+  mutate(ReportDt= as.Date(ReportDt, "%m/%d/%Y"))
+d
+```
+
+```{r}
+some= unique(d$Unit)[1:12]
+some
+```
+```{r}
+d[d$Unit==some,] %>% 
+  Plot(ReportDt,Power, by1= Unit, color= "red", data=. , n_row=4)
+```
+```{r}
+read_lines("http://lib.stat.cmu.edu/datasets/cloud", skip = 14) %>% 
+  read_table()
+```
+
+
+```{r}
+data= 
+  scan("http://lib.stat.cmu.edu/datasets/cloud", skip = 15, nlines = 108,
+           what = list(period= character(),
+                       seeded= character(),
+                       season= character(),
+                       te= numeric(),
+                       tw= numeric(),
+                       nc= numeric(),
+                       sc= numeric(),
+                       nwc= numeric())) %>% 
+  as_tibble()
+  
+data
+```
+
+```{r}
+data %>% 
+  ggplot(aes(season, te))+
+  geom_boxplot(aes(fill=seeded))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
