@@ -7,14 +7,15 @@ library(lessR)
 
 
 ```{r}
-read_csv("./datasets/weather.csv",
-         #skip = 1,
-         #col_names=c("l_no","l_name","date","temp","humidi"),
+data_source="https://raw.githubusercontent.com/flynt1/my_datasets/master/weather.csv"
+read_csv(data_source,
+         skip=1,
+         col_names=c("l_no","l_name","date","temp","humi"),
          locale = locale("ko", encoding="euc-kr"))
 ```
 
 ```{r}
-url="https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
+url="https://raw.githubusercontent.com/flynt1/my_datasets/master/iris.csv"
 df= read_csv(url, col_names = c("s.len","s.wid","p.len","p.wid","species"))
 df
 ```

@@ -1,0 +1,141 @@
+```{r}
+library(tidyverse)
+```
+- grep(찾는패턴, 찾는대상, value=T, ignore.case=T)
+```{r}
+string= installed.packages() 
+string %>% grep("ak.",.,value=T)
+```
+
+
+```{r}
+string %>% grep("(pr){1,3}",.,value=T)
+```
+- greedy & lazy matching
+```{r}
+html.doc= "<TITLE>Happly Days</TITLE>"
+gsub("<.*>","",html.doc)
+gsub("<.*?>","",html.doc) #수량지정자뒤에 ?를 붙힌다.
+```
+
+```{r}
+gregexpr("<.*?>", html.doc) %>% regmatches(html.doc, .)
+```
+- 이스케이프 시퀀스
+```{r}
+string= "I need 100$, She gave me a ^. I don't know why."
+
+gsub("\\^","carrot", string)
+```
+
+- 백레퍼런스
+```{r}
+string= "# a small thing makes a big difference #"
+gsub("(\\w).+\\1","*",string)
+```
+
+```{r}
+html= "<div class='power'>100%</dev>"
+regmatches(html,regexpr("\\d+.",html))
+
+gsub("(<.+?>)","",html)
+
+gsub("(<.*?>)(.*)(<.*?>)","\\2",html)
+```
+```{r}
+regmatches(state.name,regexpr("^New(.*[xy].*)",state.name))
+```
+```{r}
+gsub("^New(.*[xy].*)","NEW\\1", state.name) %>% grep("^new",.,ignore.case=T, value=T)
+```
+
+```{r}
+telephone= "Barabasi, Albert-Laszlo917 1843James Bond(02) 563-1987(1)John F.Kennedy051-776-5879(123)Dr.Who(062) 324-9576McCartney, J.Paul0648323912"
+telephone
+```
+```{r}
+names= regmatches(telephone, gregexpr("[[:alpha:] .,-]{2,}",telephone)) %>% unlist(.)
+names
+```
+
+```{r}
+phone= 
+  regmatches(telephone, 
+             gregexpr("\\(?(\\d{2,3})?\\)?(-| )?\\d{3}(-| )?\\d{4}\\(?(\\d{1,3})?\\)?",
+                      telephone)) %>% unlist()
+phone
+```
+
+```{r}
+tibble(names,phone) %>% 
+  mutate(inner_no= str_extract(phone, "\\((\\d{1,3})\\)$") %>% str_extract(.,"\\d+")) %>%
+  mutate(no= str_replace_all(phone,"\\D","")) %>% 
+  mutate(Yes= if_else(is.na(inner_no), TRUE, FALSE)) %>% 
+  mutate(no= if_else(Yes, no, str_sub(no,1,nchar(no)-nchar(inner_no)))) %>% 
+  mutate(phone= str_sub(no, nchar(no)-6,nchar(no))) %>% 
+  mutate(local= str_sub(no, 1, nchar(no)-nchar(phone))) %>% 
+  select(names,local,phone,inner_no)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
