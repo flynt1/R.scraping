@@ -1,5 +1,7 @@
 ```{r}
 library(tidyverse)
+library(httr)
+library(RCurl)
 ```
 - grep(찾는패턴, 찾는대상, value=T, ignore.case=T)
 ```{r}
@@ -67,26 +69,66 @@ phone
 ```
 
 ```{r}
-tibble(names,phone) %>% 
-  mutate(inner_no= str_extract(phone, "\\((\\d{1,3})\\)$") %>% str_extract(.,"\\d+")) %>%
-  mutate(no= str_replace_all(phone,"\\D","")) %>% 
-  mutate(Yes= if_else(is.na(inner_no), TRUE, FALSE)) %>% 
-  mutate(no= if_else(Yes, no, str_sub(no,1,nchar(no)-nchar(inner_no)))) %>% 
-  mutate(phone= str_sub(no, nchar(no)-6,nchar(no))) %>% 
-  mutate(local= str_sub(no, 1, nchar(no)-nchar(phone))) %>% 
-  select(names,local,phone,inner_no)
+str_match_all(telephone,
+              "\\(?(\\d{2,3})?\\)?(-| )?(\\d{3})(-| )?(\\d{4})\\(?(\\d{1,3})?\\)?") %>% 
+  .[[1]] %>% 
+  as_tibble(.) %>% 
+  #select(V2,V4,V6,V7) %>% 
+  transmute(local_no= V2, 
+            phone_no= paste0(V4,"-",V6),
+            inter_no= V7) %>% 
+  replace_na(list(local_no= "*", phone_no="-", inter_no="*")) %>% 
+  bind_cols(tibble(names),.)
 ```
 
+```{r}
+ll= system("cat /etc/passwd", intern = T) %>% unlist(.)
+ll[str_detect(ll,"cgm")]
+```
 
+```{r}
+mon= c(1:12)
 
+str_pad(mon, width = 2, side = "left", pad=0)
+```
 
+```{r}
+str_c(c("data mining","text mining"), "is useful", sep=" ", collapse = "\n") %>% cat()
+```
 
+```{r}
+ll %>% str_c(collapse = ";")
+```
 
+```{r}
+Sys.getlocale()
+Sys.localeconv()
+localeToCharset()
+```
 
+```{r}
+star="별 헤는 밤"
+Encoding(star)= "EUC-KR"
+star
+```
 
+```{r}
+guess_encoding(file="https://www.mk.co.kr")
+get= GET(url="https://www.mk.co.kr")
+html= content(get, as="text")
+```
+```{r}
+url= "http://www.abrahamlincolnonline.org/lincoln/speeches/gettysburg.htm"
+html= getURL(url)
+```
 
-
-
+```{r}
+html %>% 
+  str_replace_all(.,"<.*>","") %>% 
+  str_replace_all(.,"\\s{1,}"," ") %>%
+  str_trim() %>% 
+  cat()
+```
 
 
 
