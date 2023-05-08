@@ -1,0 +1,97 @@
+```{r}
+library(httr)
+library(XML)
+library(tidyverse)
+library(lessR)
+```
+
+### 1. read html
+
+```{r}
+url= "https://www.nobelprize.org/prizes/"
+html= GET(url)
+```
+
+### 2. parse html
+
+-   DOM 구조를 파악하고 계층 구조의 문서로 변환하는 작업을 수행한다.
+
+    ```{r}
+    html.parsed= htmlParse(html)
+    ```
+
+-   <h4>...</h4>
+
+    에서 정의된 제목을 읽는다. (단, h4노드는 여러 곳에 있을 수 있다, 상위 노드부터 차례로 지정하면 상당히 거른다)
+
+    ```{r}
+    xpathSApply(html.parsed,"//article/header/h4")
+    ```
+
+### 3. 제목 추출
+
+-   상위에
+
+    <article>...</article>
+
+    노드가 보인다. article 노드와 class속성이 "content'로 구체적으로 특정한다. xmlvalue함수의 trim=T를 통해서 양쪽의 white space를 제거한다.
+
+    ```{r}
+    xpathSApply(html.parsed, "//article[@class='content']//h4", xmlValue,trim=T)
+    ```
+
+### 4. 내용 추출
+
+-   노벨상 설명을 추출한다.
+
+-   article 노드의 class 속성이 content인 노드를 추출한다.
+
+-   마지막 설명은 링크이므로 추출후 삭제하고, 2개의 콘텐츠는 합쳐서 하나로 만든다.
+
+    ```{r}
+    xpathSApply(html.parsed,
+                "//article[@class='content']//p[position()!=last()]",
+                xmlValue) %>% 
+      str_c(collapse = " ")
+      
+    ```
+
+### 5. 주요 통계 데이터 추출
+
+-   <li>....</li>
+
+    노드에서 주요 데이터를 추출한다.
+
+    ```{r}
+    xpathSApply(html.parsed,"//ul[@class='factlist']//li", xmlValue) %>% 
+      tibble() %>% 
+      `colnames<-`(., c("facts")) %>% 
+      separate(sep = ":", col = facts, into = c("category","statistics"),
+               convert = T)
+    ```
+
+### 6. 이미지 추출
+
+-   xmlGetAttr()를 이용해서 이미지를 추출
+
+    ```{r}
+    img= 
+      xpathSApply(html.parsed,
+                     "//div[@class='nobel__blocks--content']/section[1]/div[1]",
+                     xmlGetAttr, "data-bgset") %>% 
+      str_split("\\|") %>% 
+      unlist(.) %>% 
+      .[3] %>% 
+      str_replace("(.*) \\[.*\\]","\\1") %>% 
+      str_trim("both")
+    img
+    ```
+
+    ```{r}
+    GET(img, write_disk("medal.jpg", overwrite = T))
+    ```
+
+    ```{r}
+    library(imager)
+    plot(load.image("medal.jpg"), axes=FALSE)
+    ```

@@ -1,0 +1,424 @@
+```{r}
+library(tidyverse)
+library(lessR)
+library(httr)
+```
+
+```{r}
+html.string <- c(
+  '<!DOCTYPE html>',
+  '<html>',
+  '<head>',
+  '<title>Recommended Books</title>',
+  '</head>',
+  '<body>',
+  '<h1>Books for Seaside Reading</h1>',
+  '<p>Reading List</p>',
+  '<table>',
+  '<tr> <th>Title</th> <th>Author</th> <th>Publisher</th> </tr>',
+  '<tr> <td>The Old Man and The Sea</td> <td>Ernest Hemingway</td> <td>Scribner</td> </tr>',
+  '<tr> <td>Moby Dick</td> <td>Herman Melville</td> <td>Simon and Brown</td> </tr>',
+  '</table>',
+  '<br>',
+  '<a href="http://www.amazon.com">Click Here to Buy</a>',
+  '</body>',
+  '</html>'
+)
+```
+
+```{r}
+html.string %>% writeLines("books.html")
+```
+
+```{r}
+xml.string <- c(
+  '<?xml version="1.0" encoding="UTF-8"?>',
+  '<books>',
+  '<book lang="eng" format="paperback" pages="128">',
+  '<title>The Old Man and The Sea</title>',
+  '<author>',
+  '<first_name>Ernest</first_name>',
+  '<last_name>Hemingway</last_name>',
+  '</author>',
+  '<year>1995</year>',
+  '<publisher>Scribner</publisher>',
+  '</book>',
+  '<book lang="eng" format="hardcover" pages="488">',
+  '<title>Moby Dick</title>',
+  '<author>',
+  '<first_name>Herman</first_name>',
+  '<last_name>Melville</last_name>',
+  '</author>',
+  '<year>2016</year>',
+  '<publisher>Simon and Brown</publisher>',
+  '</book>',
+  '</books>'
+)
+```
+
+```{r}
+xml.string %>%  writeLines("books.xml")
+```
+
+
+```{r}
+library(pander)
+openFileInOS("books.html")
+openFileInOS("books.xml")
+```
+
+```{r}
+xml.string2 <- c(
+  '<?xml version="1.0" encoding="UTF-8"?>',
+  '<!DOCTYPE html>',
+  '<root xmlns:t="http://www.html.com/myhtml" xmlns:m="http://www.xml.com/myxml">',
+  '<t:head>',
+  '<t:title>Look Inside!</t:title>',
+  '</t:head>',
+  '<m:book id="1">',
+  '<m:title>Moby Dick</m:title>',
+  '<m:author>Herman Melville</m:author>',
+  '</m:book>',
+  '</root>'
+)
+```
+
+
+```{r}
+xml.string2 %>%  writeLines("bookinside.xml")
+```
+
+```{r}
+library(XML)
+```
+
+```{r}
+books= xmlParse("books.xml")
+```
+
+```{r}
+books
+```
+
+```{r}
+class(books)
+```
+
+```{r}
+books= xmlParse(xml.string, asText = T)
+```
+
+```{r}
+books
+```
+
+```{r}
+book2= htmlParse("books.html")
+book2
+class(book2)
+```
+
+```{r}
+root= xmlRoot(books)
+root
+class(root)
+```
+
+```{r}
+xmlName(root)
+xmlSize(root)
+xmlValue(root)
+xmlAttrs(root)
+xmlGetAttr(root,"book")
+```
+
+```{r}
+root[[1]][[1]][[1]]
+```
+
+```{r}
+root["book"][[2]][[2]][[1]]
+```
+
+```{r}
+children= xmlChildren(root)
+children
+```
+
+```{r}
+old.man= children[[1]]
+old.man
+```
+```{r}
+xmlName(old.man)
+xmlSize(old.man)
+xmlValue(old.man)
+xmlAttrs(old.man)
+xmlGetAttr(old.man, name="format")
+getSibling(old.man)
+```
+
+```{r}
+old.man.sub= xmlChildren(old.man)
+old.man.sub$author
+old.man.author= xmlChildren(old.man.sub$author)
+old.man.author$first_name
+```
+
+```{r}
+a= tibble()
+for(i in 1:xmlSize(root)){
+  a= a %>% bind_rows(
+    root[[i]] %>% xmlSApply(.,xmlValue) %>% as_tibble_row())
+}
+```
+
+
+```{r}
+a %>% 
+  mutate(first_name= str_match(author, "^[[:upper:]][[:lower:]]+"),
+         last_name= str_match(author, "[[:upper:]][[:lower:]]+$")) %>% 
+  select(title, last_name, first_name, year, publisher)
+```
+
+```{r}
+xmlToDataFrame(root)
+```
+```{r}
+xmlToList(root)
+```
+
+```{r}
+html.string2 <- c(
+  '<!DOCTYPE html>',
+  '<html>',
+  '<head>',
+  '<title>Movie Quotes</title>',
+  '</head>',
+  '<body>',
+  '<h1>Famous Quotes from Movies</h1>',
+  '<div time="1h 39min" genre="drama" lang="english" date="December/16/1970">',
+  '<h2>Ali MacGraw as Jennifer Cavilleri</h2>',
+  '<p><i>Love means never having to say you\'re sorry.</i></p>',
+  '<p><b>Movie: </b>Love Story</p>',
+  '</div>',
+  '<div time="2h 22min"  genre="comedy" date="June/23/1994">',
+  '<h2>Tom Hanks as Forrest Gump</h2>',
+  "<p><i>My mama always said, 'Life was like a box of chocolates; you never know what you\'re gonna get.'</i></p>",
+  "<p><i>Mama says,'Stupid is as stupid does.'</i></p>",
+  '<p><b>Movie: </b><a href="http://www.imdb.com/title/tt0109830/?ref_=nv_sr_1">Forrest Gump</a></p>',
+  '</div>',
+  '<p>',
+  '<b>Sources:</b><br>',
+  '<a href="http://www.afi.com/"><i>American Film Institute</i></a><br>',
+  '<a href="http://www.hollywoodreporter.com/"><i>Hollywood Reporters</i></a>',
+  '</p>',
+  '</body>',
+  '</html>'
+)
+writeLines(html.string2, "moviequotes.html")
+
+```
+
+```{r}
+quotes= htmlParse("./moviequotes.html")
+```
+
+```{r}
+quotes
+```
+
+```{r}
+xpathSApply(quotes, path = "/html/body/div/p/i")
+```
+
+```{r}
+xpathSApply(quotes, path = "//body//p/i")
+```
+
+```{r}
+xpathSApply(quotes, path = "//p/i")
+```
+
+```{r}
+xpathSApply(quotes, path = "//i")
+```
+
+```{r}
+xpathSApply(quotes, path = "//title  | //h1")
+```
+
+```{r}
+xpathSApply(quotes, path = c("//title","//h1"))
+```
+
+
+```{r}
+xpathSApply(quotes, path = "//a/ancestor::div//i")
+```
+
+```{r}
+xpathSApply(quotes, path = "//b/preceding::i")
+```
+
+```{r}
+xpathSApply(quotes, path = "//p/preceding-sibling::h2")
+```
+
+```{r}
+xpathSApply(quotes, path = "//h1/following-sibling::p//a")
+```
+
+```{r}
+xpathSApply(quotes, path = "//i/ancestor::a")
+```
+
+```{r}
+xpathSApply(quotes, path = "//a/ancestor::div/child::*")
+```
+
+```{r}
+xpathSApply(quotes, path = "//p[./i]")
+```
+
+```{r}
+xpathSApply(quotes, path = "//div/p[position()=1]")
+```
+
+
+```{r}
+xpathSApply(quotes, path = "//div/p[position()=last()]")
+```
+
+
+```{r}
+xpathSApply(quotes, path = "//p[count(.//a)>1]//a[position()=last()]")
+```
+
+```{r}
+xpathSApply(quotes, path = "//div[count(./@*)=4]")
+```
+
+```{r}
+root.quotes= quotes %>% xmlRoot(.)
+root.quotes %>% str()
+```
+
+```{r}
+quotes.child= root.quotes %>% xmlChildren(.)
+quotes.child[[2]][[4]]
+```
+
+
+```{r}
+xpathSApply(quotes, path = "//div[count(./@*)>=4]")
+```
+
+```{r}
+xpathSApply(quotes, path = "//*[string-length(text())>60]")
+```
+
+```{r}
+xpathSApply(quotes, path = "//*[contains(text(),'Love')]")
+```
+
+```{r}
+xpathSApply(quotes, path = "//div[not(count(./@*)<4)]")
+```
+
+
+```{r}
+xpathSApply(quotes, path = "//div[@genre='drama']")
+```
+
+```{r}
+xpathSApply(quotes, path = "//div[@lang]")
+```
+
+```{r}
+xpathSApply(quotes, path = "//div[.//a]")
+```
+
+```{r}
+xpathSApply(quotes, path = "//*[contains(text(),'Love')]")
+```
+
+```{r}
+xpathSApply(quotes,path = "//*[starts-with(./@time,'1h')]")
+```
+
+```{r}
+xpathSApply(quotes, path = "//div[substring-before(./@date,'/')='December']/p[1]")
+```
+
+
+```{r}
+xpathSApply(quotes, path = "//div[substring-after(substring-after(./@date,'/'),'/')='1970']/p[2]")
+```
+
+```{r}
+xpathSApply(quotes, path = "//p/i", xmlValue)
+```
+
+```{r}
+xpathSApply(quotes, path = "//div", xmlGetAttr, "lang")
+```
+
+```{r}
+lowertostring= function(x){
+  xmlValue(x) %>% tolower(.) %>% return(.)}
+
+xpathSApply(quotes, path = "//p/i", fun = lowertostring)
+```
+
+```{r}
+xpathSApply(quotes, path = "//div", xmlGetAttr, "date") %>% str_extract_all(.,"\\d{4}") %>% unlist(.)
+```
+
+```{r}
+getyear= function(x){
+  xmlGetAttr(x,"date") %>% str_extract("\\d{4}") %>% return(.)}
+
+xpathSApply(quotes, path = "//div", getyear)
+```
+
+```{r}
+bookinside= xmlParse("bookinside.xml")
+bookinside
+```
+
+```{r}
+xpathSApply(bookinside, "//title", xmlValue)
+```
+
+```{r}
+xpathSApply(bookinside, "//t:title", xmlValue)
+```
+
+```{r}
+xpathSApply(bookinside, "//m:title", xmlValue)
+```
+
+```{r}
+xmlNamespaceDefinitions(bookinside)
+```
+
+```{r}
+ns.xml= xmlNamespaceDefinitions(bookinside)[[2]]$uri
+ns.html= xmlNamespaceDefinitions(bookinside)[[1]]$uri
+```
+
+```{r}
+xpathSApply(bookinside, path = "//x:title", namespaces = c(x=ns.html), xmlValue)
+xpathSApply(bookinside, path = "//x:title", namespaces = c(x=ns.xml), xmlValue)
+```
+
+
+
+
+
+
+
+
+
+
