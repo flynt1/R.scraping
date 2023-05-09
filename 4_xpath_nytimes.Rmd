@@ -1,0 +1,88 @@
+### 1. library loading
+
+```{r}
+library(httr)
+library(XML)
+library(tidyverse)
+```
+
+### 2. html parsing
+
+-   계층구조를 파악하고 계층구조의 문서로 변환한다.
+
+```{r}
+url= "https://archive.nytimes.com/www.nytimes.com/learning/general/onthisday/big/0911.html"
+html= GET(url)
+html.parsed= htmlParse(html)
+```
+
+### 3. 전처리 과정
+
+-   빈문자열 제외, 문자열 결합하여 하나의 단일 문자열로 만든다.
+
+```{r}
+article= 
+  xpathSApply(html.parsed, "//p", xmlValue) %>% 
+  .[. !=""] %>% 
+  str_c(collapse = " ")
+```
+
+### 4. 워드클라우드 분석
+
+-   tm 패키지를 이용, VCorpus()를 이용하여 VCorpus()객체로 변환한다.
+
+```{r}
+library(tm)
+getSources()
+```
+
+```{r}
+doc= VCorpus(VectorSource(article))
+doc
+```
+
+-   소문자변환, 불용어제거, 문장부호 제거, 숫자 제거, 공백 제거, 어간 추출
+
+```{r}
+mystopwd= c(stopwords("english"), "also","among","but","even","four","get",
+            "one","said","the","there","two","three")
+doc=
+  doc %>% 
+  tm_map(content_transformer(tolower)) %>% 
+  tm_map(removeWords,mystopwd) %>% 
+  tm_map(removePunctuation) %>% 
+  tm_map(removeNumbers) %>% 
+  tm_map(stripWhitespace) %>% 
+  tm_map(stemDocument)
+doc
+```
+
+-   문서-용어 행렬 형태로 구조화 한다.
+
+```{r}
+dtm= DocumentTermMatrix(doc)
+inspect(dtm[,1:10])
+```
+
+-   출현 빈도가 높은 상위 10개 단어 추출
+
+```{r}
+term.freq=
+  dtm %>% 
+  as.matrix() %>% 
+  colSums() 
+
+term.freq %>% 
+  sort(decreasing = T) %>% 
+  .[1:10]
+```
+
+```{r, warning=FALSE}
+library(wordcloud)
+set.seed(123)
+term.freq <- colSums(as.matrix(dtm))
+#windows(width=6.5, height=6.5)
+wordcloud(words=names(term.freq), freq=term.freq, scale=c(4, 0.2), min.freq=3, 
+          rot.per=0, random.order=FALSE, random.color=FALSE, 
+          colors=brewer.pal(5, "Set1"))
+```
