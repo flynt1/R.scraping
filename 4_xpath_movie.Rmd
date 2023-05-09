@@ -1,0 +1,99 @@
+### 1. loading library
+
+```{r}
+library(httr)
+library(XML)
+library(tidyverse)
+```
+
+### 2. parsing html
+
+```{r}
+url= "https://www.imdb.com/search/title/?title_type=feature&release_date=2005-01-01,2005-12-31&count=100"
+html= GET(url)
+html.parsed= htmlParse(html)
+```
+
+```{r}
+
+```
+
+### 3. 영화 순위 추출 
+
+```{r}
+rank= 
+  xpathSApply(html.parsed,
+              "//span[@class='lister-item-index unbold text-primary']",
+              xmlValue) %>% 
+  parse_number(.)
+rank[1:20]
+```
+
+### 4. 영화 제목 추출
+
+```{r}
+title= 
+  xpathSApply(html.parsed,
+              "//span[@class='lister-item-index unbold text-primary']
+              /following-sibling::a",
+              xmlValue)
+  
+title %>% head(5)
+```
+
+### 5. 영화 줄거리 추출
+
+```{r}
+story=
+  xpathSApply(html.parsed, "//p[@class='text-muted']", xmlValue, trim=T)
+
+story %>% head(5)
+```
+
+### 6. 상영시간 추출
+
+```{r}
+runtime=
+  xpathSApply(html.parsed, "//span[@class='runtime']", xmlValue) %>% 
+  parse_number()
+
+runtime %>% head()
+```
+
+### 7. 영화 장르 추출
+
+-   여러 장르는 대표적으로 첫 장르를 추출한다.
+
+```{r}
+genre=
+  xpathSApply(html.parsed, "//span[@class='genre']", xmlValue, trim=T) %>% 
+  str_extract("\\w+") %>% 
+  as_factor()
+
+genre
+```
+
+### 8. 영화 평점 추출
+
+```{r}
+rating=
+  xpathSApply(html.parsed, "//div[@name='ir']/strong", xmlValue) %>% 
+  parse_number()
+  
+rating %>% head()
+```
+
+### 9. 영화 감독 추출
+
+```{r}
+director=
+  xpathSApply(html.parsed, "//p[@class='']/a[1]", xmlValue)
+
+director %>% head()
+```
+
+### 10. 투표수 추출
+
+```{r}
+
+```
