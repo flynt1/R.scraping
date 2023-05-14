@@ -1,0 +1,57 @@
+### 1. library loading
+
+```{r}
+library(httr)
+library(XML)
+library(tidyverse)
+library(lubridate)
+library(lessR)
+```
+
+### 2. html parsing
+
+```{r}
+url= "https://www.opentable.com/planet-hollywood-times-square"
+html= GET(url)
+html.parsed= htmlParse(html)
+```
+
+### 
+
+### 3. 레스토랑 이름 추출
+
+```{r}
+html.parsed %>% 
+  xpathSApply("//h1[@class='eM9Li2wbkQvvjxZB11sV mPudeIT67bJGOcOfKy92']",
+              xmlValue,
+              trim=T)
+```
+
+### 4. Review 작성자 추출
+
+```{r}
+html.parsed %>% 
+  xpathSApply("//p[@class='V0gqMM0V5nr33Ha56k83 cpEOy_DPrbjR6hnlY0ub']",
+              xmlValue,
+              trim=T)
+```
+
+### 5. Review 작성일자 추출
+
+```{r}
+dateExtract= function(date){
+  if_else(str_detect(date,"hours"), 
+          as.character(Sys.Date()),
+          (if_else(str_detect(date,"(a|1) day"), 
+                   as.character(Sys.Date()-1),
+                   (if_else(str_detect(date,"days")), 
+                    as.character(Sys.Date()-parse_number(date)),
+                    as.character(mdy(date))))))
+}
+
+html.parsed %>% 
+  xpathSApply("//p[@class='Xfrgl6cRPxn4vwFrFgk1']",
+              xmlValue,
+              trim=T) %>% 
+  dateExtract()
+```
