@@ -11,8 +11,8 @@ library(lessR)
 ### 2. html parsing
 
 ```{r}
-url= "https://www.opentable.com/planet-hollywood-times-square"
-html= GET(url)
+base.url= "https://www.opentable.com/planet-hollywood-times-square"
+html= GET(base.url)
 html.parsed= htmlParse(html)
 ```
 
@@ -21,37 +21,234 @@ html.parsed= htmlParse(html)
 ### 3. 레스토랑 이름 추출
 
 ```{r}
-html.parsed %>% 
+name=
+  html.parsed %>% 
   xpathSApply("//h1[@class='eM9Li2wbkQvvjxZB11sV mPudeIT67bJGOcOfKy92']",
               xmlValue,
               trim=T)
+name
 ```
 
 ### 4. Review 작성자 추출
 
 ```{r}
-html.parsed %>% 
+author=
+  html.parsed %>% 
   xpathSApply("//p[@class='V0gqMM0V5nr33Ha56k83 cpEOy_DPrbjR6hnlY0ub']",
               xmlValue,
               trim=T)
+author
 ```
 
 ### 5. Review 작성일자 추출
 
 ```{r}
 dateExtract= function(date){
-  if_else(str_detect(date,"hours"), 
-          as.character(Sys.Date()),
-          (if_else(str_detect(date,"(a|1) day"), 
-                   as.character(Sys.Date()-1),
-                   (if_else(str_detect(date,"days")), 
-                    as.character(Sys.Date()-parse_number(date)),
-                    as.character(mdy(date))))))
-}
+  today= Sys.Date()
+  date.ex= if_else(str_detect(date,"hours"), as.character(today),
+                   if_else(str_detect(date,"(a|1) day"), as.character(today-1),
+                           if_else(str_detect(date, "days"),
+                                   as.character(today- parse_number(date)),
+                                   as.character(mdy(date)))))
+  return(date.ex) }
 
-html.parsed %>% 
+date.sample= c("Dined on January 29, 2022",
+               "Dined on 11 hours ago",
+               "Dined on a day ago",
+               "Dined on 1 day ago",
+               "Dined on 2 days ago",
+               "Dined on 4 days ago")
+date.sample %>% dateExtract(.)
+```
+
+```{r}
+#Sys.setlocale("LC_TIME", "English")
+date=
+  html.parsed %>% 
   xpathSApply("//p[@class='Xfrgl6cRPxn4vwFrFgk1']",
               xmlValue,
               trim=T) %>% 
   dateExtract()
+date
+#Sys.setlocale()
+```
+
+### 6. Review 추출
+
+```{r}
+review=
+  html.parsed %>% 
+  xpathSApply("//span[@class=
+              't9JcvSL3Bsj1lxMSi3pz h_kb2PFOoyZe1skyGiz9 DUkDy8G7CgNvYcWgJYPN'][1]",
+              xmlValue, trim=T) %>% 
+  head()
+review
+```
+
+### 7. 평점 추출
+
+-   Overall, Food, Service, Ambience 4가지 평정을 각각 추출한다.
+
+```{r}
+overall=
+  html.parsed %>% 
+  xpathSApply("//span[@class='Q2DbumELlxH4s85dk8Mj'][1]", xmlValue) %>% 
+  parse_number()
+
+food=
+  html.parsed %>% 
+  xpathSApply("//span[@class='Q2DbumELlxH4s85dk8Mj'][2]", xmlValue) %>% 
+  parse_number()
+
+service=
+  html.parsed %>% 
+  xpathSApply("//span[@class='Q2DbumELlxH4s85dk8Mj'][3]", xmlValue) %>% 
+  parse_number()
+
+ambience=
+  html.parsed %>% 
+  xpathSApply("//span[@class='Q2DbumELlxH4s85dk8Mj'][4]", xmlValue) %>% 
+  parse_number()
+```
+
+### 8. 마지막 페이지 넘버 추출
+
+```{r}
+total.pages=
+  html.parsed %>% 
+  xpathSApply("//footer[@data-test='reviews-pagination']//li/a",xmlValue) %>% 
+  parse_number() %>% 
+  max(.)
+total.pages
+```
+
+### 9. 페이지별로 데이터 추출
+
+```{r}
+opentable.review= tibble()
+```
+
+-   base url을 지정한다.
+
+```{r}
+base.url= "https://www.opentable.com/planet-hollywood-times-square"
+#base.url= "https://www.opentable.com/tavern-on-the-green"
+```
+
+-   레스토랑 이름과 total paage를 추출한다.
+
+```{r, message=FALSE, warning=FALSE}
+html= GET(base.url)
+html.parsed= htmlParse(html)
+
+name=
+  html.parsed %>% 
+  xpathSApply("//h1[@class='eM9Li2wbkQvvjxZB11sV mPudeIT67bJGOcOfKy92']",
+              xmlValue,
+              trim=T)
+
+total.pages=
+  html.parsed %>% 
+  xpathSApply("//footer[@data-test='reviews-pagination']//li/a",xmlValue) %>% 
+  parse_number() %>% 
+  max(.)
+
+name;total.pages
+```
+
+-   반복문으로 데이터를 추출한다.
+
+-   페이지별로 반복문을 수행한다.
+
+```{r, message=FALSE, warning=FALSE}
+for(i in c(1:total.pages)){
+  url= if_else(i==1, base.url, paste0(base.url,"?page=",i))
+  html= GET(base.url)
+  html.parsed= htmlParse(html)
+  
+  author=
+    html.parsed %>% 
+    xpathSApply("//p[@class='V0gqMM0V5nr33Ha56k83 cpEOy_DPrbjR6hnlY0ub']",
+                xmlValue,
+                trim=T)
+  
+  date=
+    html.parsed %>% 
+    xpathSApply("//p[@class='Xfrgl6cRPxn4vwFrFgk1']",
+                xmlValue,
+                trim=T) %>% 
+    dateExtract()
+  
+  review=
+    html.parsed %>% 
+    xpathSApply("//span[@class=
+              't9JcvSL3Bsj1lxMSi3pz h_kb2PFOoyZe1skyGiz9 DUkDy8G7CgNvYcWgJYPN'][1]",
+                xmlValue, trim=T)
+  
+  overall=
+    html.parsed %>% 
+    xpathSApply("//span[@class='Q2DbumELlxH4s85dk8Mj'][1]", xmlValue) %>% 
+    parse_number()
+
+  food=
+    html.parsed %>% 
+    xpathSApply("//span[@class='Q2DbumELlxH4s85dk8Mj'][2]", xmlValue) %>% 
+    parse_number()
+
+  service=
+    html.parsed %>% 
+    xpathSApply("//span[@class='Q2DbumELlxH4s85dk8Mj'][3]", xmlValue) %>% 
+    parse_number()
+
+  ambience=
+    html.parsed %>% 
+    xpathSApply("//span[@class='Q2DbumELlxH4s85dk8Mj'][4]", xmlValue) %>% 
+    parse_number()
+  
+  opentable.r= tibble(
+    name= name,
+    author= author,
+    date= date,
+    review= review,
+    overall= overall,
+    food= food,
+    service= service,
+    ambience= ambience,
+    remark= paste0("page=",i))
+  
+  opentable.review= bind_rows(opentable.review, opentable.r)
+  
+  Sys.sleep(0.001)
+  
+}
+```
+
+### 10. 데이터 분석
+
+```{r}
+opentable.review
+```
+
+-   평점의 분포 살펴보기
+
+```{r}
+opentable.review %>% 
+  factors(overall:ambience, levels=1:5, data = .) %>% 
+  pivot_longer(cols = overall:ambience,
+               names_to = "Item",
+               values_to = "Rating") %>% 
+  factors(Item, 
+          levels=c("overall","food","service","ambience"),data = .) %>% 
+  BarChart(Item, by=Rating, 
+           stack100 = T,
+           horiz = T,
+           fill = c(getColors(n=4,"viridis"),"darkblue"),
+           ylab = "평점(%)",
+           xlab = "평가항목",
+           legend_position = "bottom",
+           legend_title = "",
+           main = name,
+           data=.)
+  #ggplot(aes(rating, fill=value))+
+  #geom_bar(position="dodge")
 ```
